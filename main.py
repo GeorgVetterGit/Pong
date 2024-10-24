@@ -5,8 +5,9 @@ WIDTH = 600
 BAR_SPEED = 10
 BAR_LENGTH = 100
 BAR_WIDTH = 15
-BALL_SPEED = 5
+BALL_SPEED = 12
 RATIO = 1.1
+COOL_DOWN = 3000
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -40,8 +41,8 @@ class bar():
 class ball():
 
     def __init__(self):
-        self.x_pos = WIDTH / 2
-        self.y_pos = HEIGHT / 2
+        self.x_pos = (WIDTH / 2) - 10
+        self.y_pos = (HEIGHT / 2) - 10
         self.rect = pygame.Rect(self.x_pos, self.y_pos, 20, 20)
         pass
 
@@ -65,8 +66,8 @@ class ball():
             ratio = ratio2
             self.x_pos += 5
         if hit_right_border or hit_left_border:
-            self.x_pos = WIDTH / 2
-            self.y_pos = HEIGHT / 2
+            self.x_pos = (WIDTH / 2) - 10
+            self.y_pos = (HEIGHT / 2) - 10
             BALL_SPEED *= -1
             ratio = 1
         if self.rect.top < 0: #upper border
@@ -75,11 +76,12 @@ class ball():
         if self.rect.bottom > HEIGHT: #lower border
             ratio = 1 + (1 - ratio)
             self.y_pos -= 5
-        self.x_pos += BALL_SPEED
-        if BALL_SPEED < 0:
-            self.y_pos += BALL_SPEED * (1 - ratio)
-        else:
-            self.y_pos += BALL_SPEED * (ratio - 1)
+        if not hit_right_border or hit_left_border:
+            self.x_pos += BALL_SPEED
+            if BALL_SPEED < 0:
+                self.y_pos += BALL_SPEED * (1 - ratio)
+            else:
+                self.y_pos += BALL_SPEED * (ratio - 1)
 
         self.rect = pygame.Rect(self.x_pos, self.y_pos, 20, 20)
 
@@ -97,9 +99,13 @@ score_opp = 0
 score_player = 0
 
 my_font = pygame.font.SysFont('Consolas', 45)
+my_font_small = pygame.font.SysFont('Consolas', 15)
+
+last_time = 0
+hit_right = False
+hit_left = False
 
 running = True
-
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -115,12 +121,20 @@ while running:
     if keys[pygame.K_s]:
         opponent.move('down')
     
-    RATIO, BALL_SPEED, hit_right, hit_left = playball.move(RATIO, BALL_SPEED, player, opponent)
+    now = pygame.time.get_ticks()
+    if now - last_time >= COOL_DOWN:
+        RATIO, BALL_SPEED, hit_right, hit_left = playball.move(RATIO, BALL_SPEED, player, opponent)
+    
+    remain_time = COOL_DOWN - (now - last_time)
 
     if hit_right:
         score_opp += 1
+        last_time = now
+        hit_right = False
     if hit_left:
         score_player += 1
+        last_time = now
+        hit_left = False
 
     screen.fill(COLORS['BLACK'])
 
@@ -141,6 +155,10 @@ while running:
     player_score_text = my_font.render(str(score_player), False, COLORS['WHITE'])
     length_score_player = len(str(score_player))
     screen.blit(player_score_text, (WIDTH - 20 - (20 * length_score_player),15))
+
+    if remain_time > 0:
+        time_text = my_font_small.render('Start in ' + str(round(remain_time / 1000, 1)), False, COLORS['WHITE'])
+        screen.blit(time_text, (WIDTH / 2 - 50, HEIGHT - 20))
 
     pygame.display.flip()
 
