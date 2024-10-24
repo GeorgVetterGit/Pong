@@ -83,8 +83,6 @@ class ball():
 
         self.rect = pygame.Rect(self.x_pos, self.y_pos, 20, 20)
 
-        print(ratio)
-
         return ratio, BALL_SPEED, hit_right_border, hit_left_border
         
     def draw(self):
